@@ -9,7 +9,6 @@ setup(
     install_requires=[
         'websocket-client',
         'uuid',
-        'json',
         'urllib.request',
     ],
     description='A simple WebSocket client for Comfy UI',
