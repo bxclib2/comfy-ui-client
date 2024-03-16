@@ -10,7 +10,8 @@ import uuid
 class ComfyUIClient:
     def __init__(self, server_address):
         self.server_address = server_address
-        self.ws = None   
+        self.ws = None 
+        self.client_id = str(uuid.uuid4())
 
     def connect(self):
         self.ws = websocket.WebSocket()
@@ -20,8 +21,8 @@ class ComfyUIClient:
         if self.ws:
             self.ws.close()
 
-    def queue_prompt(self, prompt, client_id):
-        p = {"prompt": prompt, "client_id": client_id}
+    def queue_prompt(self, prompt):
+        p = {"prompt": prompt, "client_id": self.client_id}
         data = json.dumps(p).encode('utf-8')
         req = urllib.request.Request(f"http://{self.server_address}/prompt", data=data)
         response = urllib.request.urlopen(req)
@@ -32,8 +33,7 @@ class ComfyUIClient:
         return json.loads(response.read())
 
     def get_outputs(self, prompt):
-        client_id = str(uuid.uuid4())
-        prompt_id = self.queue_prompt(prompt, client_id)['prompt_id']
+        prompt_id = self.queue_prompt(prompt, self.client_id)['prompt_id']
         output_images = {}
         if not self.ws:
             raise Exception("WebSocket is not connected.")
@@ -43,7 +43,9 @@ class ComfyUIClient:
             if message['type'] == 'executing':
                 data = message['data']
                 if data['node'] is None and data['prompt_id'] == prompt_id:
-                    break  # Execution is done
+                    break #Execution is done
+            else:
+                continue #previews are binary data
 
         history = self.get_history(prompt_id)[prompt_id]
         for node_id, node_output in history['outputs'].items():
