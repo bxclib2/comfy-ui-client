@@ -33,7 +33,7 @@ class ComfyUIClient:
         return json.loads(response.read())
 
     def get_outputs(self, prompt):
-        prompt_id = self.queue_prompt(prompt, self.client_id)['prompt_id']
+        prompt_id = self.queue_prompt(prompt)['prompt_id']
         output_images = {}
         if not self.ws:
             raise Exception("WebSocket is not connected.")
