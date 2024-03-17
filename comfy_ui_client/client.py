@@ -168,7 +168,7 @@ class ComfyUIClient:
 
         with open(image_path, 'rb') as image_file:
             files = {'image': (image_ref.filename, image_file)}
-            data = {'originalRef': image_ref.to_json()}
+            data = {'original_ref': image_ref.to_json()}
 
             if overwrite is not None:
                 data['overwrite'] = str(overwrite)
