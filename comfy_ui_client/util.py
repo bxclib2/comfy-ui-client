@@ -19,3 +19,4 @@ def _find_prompt_in_history(history, prompt):
         if original_prompt == prompt:
             return prompt_id
     return None
+

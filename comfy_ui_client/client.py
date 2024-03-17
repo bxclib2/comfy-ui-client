@@ -140,10 +140,12 @@ class ComfyUIClient:
         with urllib.request.urlopen(f"http://{self.server_address}/view?{url_values}") as response:
             return response.read()
 
-    def upload_image(self, subfolder, the_file_name_on_server, image_path):
-        data = {"subfolder": subfolder}
+    def upload_image(self, image_ref, image_path, overwrite=None):
+        data = {"subfolder": image_ref.subfolder}
+        if overwrite is not None:
+            data['overwrite'] = str(overwrite)
         with open(image_path, 'rb') as image_file:
-            files = {'image': (the_file_name_on_server, image_file)}
+            files = {'image': (image_ref.filename, image_file)}
             resp = requests.post(f"http://{self.server_address}/upload/image", files=files, data=data)
         return resp.content
 
