@@ -74,9 +74,17 @@ class ComfyUIClient:
         data = json.dumps(params).encode('utf-8')
         req = urllib.request.Request(f"http://{self.server_address}/history", method='POST', headers=headers, data=data)
         with urllib.request.urlopen(req) as response:
-            result = json.loads(response.read())
-            if 'error' in result:
-                raise Exception(json.dumps(result))
+            result = response.read()
+
+    def clear_history(self):
+        return self.edit_history({
+            "clear": True
+        })
+
+    def delete_history(self, prompt_id_list):
+        return self.edit_history({
+            "delete": prompt_id_list
+        })
 
     def get_system_stats(self):
         with urllib.request.urlopen(f"http://{self.server_address}/system_stats") as response:
@@ -144,10 +152,34 @@ class ComfyUIClient:
         data = {"subfolder": image_ref.subfolder}
         if overwrite is not None:
             data['overwrite'] = str(overwrite)
+
         with open(image_path, 'rb') as image_file:
             files = {'image': (image_ref.filename, image_file)}
             resp = requests.post(f"http://{self.server_address}/upload/image", files=files, data=data)
-        return resp.content
+
+        result = resp.json()
+        if 'error' in result:
+            raise Exception(json.dumps(result))
+
+        return result
+
+    def upload_mask(self, image_ref, image_path, overwrite=None):
+        url = f"http://{self.server_address}/upload/mask"
+
+        with open(image_path, 'rb') as image_file:
+            files = {'image': (image_ref.filename, image_file)}
+            data = {'originalRef': image_ref.to_json()}
+
+            if overwrite is not None:
+                data['overwrite'] = str(overwrite)
+
+            response = requests.post(url, files=files, data=data)
+
+        result = response.json()
+        if 'error' in result:
+            raise Exception(json.dumps(result))
+
+        return result
 
     def get_queue(self):
         with urllib.request.urlopen(f"http://{self.server_address}/queue") as response:

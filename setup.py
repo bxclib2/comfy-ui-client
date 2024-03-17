@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='comfy-ui-client',
-    version='0.0.1.7',
+    version='0.0.1.8',
     license='MIT',
     author='Gavin Bao',
     author_email='xingce.bao@gmail.com',
