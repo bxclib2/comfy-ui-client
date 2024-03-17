@@ -10,8 +10,14 @@ setup(
     install_requires=[
         'websocket-client',
         'uuid',
+        "requests",
     ],
     description='A simple WebSocket client for Comfy UI',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
+    extras_require={
+        'dev': [
+            "pytest>=6.0",
+        ]
+    },
 )
