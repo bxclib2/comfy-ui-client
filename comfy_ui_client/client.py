@@ -125,7 +125,8 @@ class ComfyUIClient:
         output_images = {}
         if not self.ws.connected:
             self.connect()
-        prompt_id = self.handle_message(prompt_id, prompt, handle_status_event, handle_progress_event, handle_executed_event)
+        prompt_id = self.handle_message(prompt_id, prompt, handle_status_event,
+                                        handle_progress_event, handle_executed_event)
         history = self.get_history(prompt_id)[prompt_id]
         for node_id, node_output in history['outputs'].items():
             if 'images' in node_output:
@@ -192,35 +193,43 @@ class ComfyUIClient:
         current_node = None
         while True:
             out = self.ws.recv()
-            message = json.loads(out)
-            if message["type"] == "status":
-                if handle_status_event is not None:
-                    handle_status_event(message)
-                queue = self.get_queue()
-                queue = _parse_queue(queue)
-                if prompt_id not in queue:  # Prompt is not queued. Maybe cached
-                    # Prompt is cached, so not queued. Have to fetch output info from history.
-                    history = self.get_history(None)
-                    cached_id = _find_prompt_in_history(history, prompt)
-                    if cached_id is None:
-                        raise ValueError("Cache ID not found in history")
-                    return cached_id
-            if message["type"] == "executing":
-                if message["data"]["node"] is not None:
-                    node_id = int(message["data"]["node"])
-                    current_node = node_id
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message["type"] == "status":
+                    if handle_status_event is not None:
+                        handle_status_event(message)
+                    queue = self.get_queue()
+                    queue = _parse_queue(queue)
+                    if prompt_id not in queue:  # Prompt is not queued. Maybe cached
+                        # Prompt is cached, so not queued. Have to fetch output info from history.
+                        history = self.get_history(None)
+                        cached_id = _find_prompt_in_history(history, prompt)
+                        if cached_id is None:
+                            raise ValueError("Cache ID not found in history")
+                        return cached_id
+                if message["type"] == "executing":
+                    if message["data"]["node"] is not None:
+                        node_id = int(message["data"]["node"])
+                        current_node = node_id
+                        if handle_progress_event is not None:
+                            handle_progress_event(current_node, 0, 0)
+                    elif message["data"]['prompt_id'] == prompt_id:
+                        # execution done
+                        break
+                if message["type"] == "executed":
+                    if message["data"]["prompt_id"] == prompt_id:
+                        if handle_executed_event is not None:
+                            handle_executed_event(message["data"])
+                        # break
+                        # Here cannot break. If there are tmp outputs, comfyui will also send this event
+                if message["type"] == "progress":
+                    progress = int(message["data"]["value"])
+                    total = int(message["data"]["max"])
                     if handle_progress_event is not None:
-                        handle_progress_event(current_node, 0, 0)
-            if message["type"] == "executed":
-                if message["data"]["prompt_id"] == prompt_id:
-                    if handle_executed_event is not None:
-                        handle_executed_event(message["data"])
-                    break
-            if message["type"] == "progress":
-                progress = int(message["data"]["value"])
-                total = int(message["data"]["max"])
-                if handle_progress_event is not None:
-                    handle_progress_event(current_node, progress, total)
+                        handle_progress_event(current_node, progress, total)
+            else:
+                # binary data is for preview. We don't parse it
+                continue
         return prompt_id
 
 # Usage example:
